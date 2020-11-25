@@ -1,0 +1,3 @@
+[submodule "ziptools"]
+	path = ziptools
+	url = https://github.com/drwhattheheck/ziptools

@@ -1,0 +1,135 @@
+#!/bin/bash
+# zippy
+#
+# Author: William T. Hollingsworth
+# Last Revision: 30.10.2020
+# Usage: zippy <subcommand> <LabID>
+#
+# Description:
+# A wrapper script for bxcp and lsz that helps automate the specific task
+# of collecting student submissions through Google Assignments (although one
+# could use Google Classroom with a trivial change to some hardcoded paths) or
+# checking in on who has submitted.  It will perform these actions for all open
+# sections, assuming past sections are moved into a folder called "Archive".
+#
+# The format of this script is taken from:
+# https://gist.github.com/waylan/4080362
+#
+# Revision History:
+# 02.11.2020
+# - Initial version.
+#
+# TODO:
+# 1. Add a -f|--reformat option to the collect subcommand that:
+#    a) pulls java sources out of nested directories
+#    b) strips any package lines
+#    c) deletes any bytecode # for sneaky students who submit old bytecode
+#    d) compiles the code    # with sources that don't currently compile
+#    e) runs `chmod +r <LabID>/*/*.java`
+#
+#    This would also be it's own function subcommand.
+#
+#    This is code from last year's monolithic script that removed bytecode:
+#
+#        # hold the hand of any student who refuses to read directions and gives me
+#        # their bytecode anyway
+#        if [ ${#contents} -ne 0 ]; then # ${#var} gives the length of ${var}
+#            echo "${student} submitted bytecode!"
+#            echo "The following archived files will be removed from ${extract_dir}:"
+#            echo "${contents}"
+#            rm $(echo ${contents} | awk '{ print $NF }' | tr '\n' ' ')
+#        fi
+#
+# 2. Add a -m|--moss-request option to the collect subcommand that:
+#    a) reformats the code to prepare for the request
+#    b) runs `moss -l java -d <LabID>/*/*.java`
+
+# If we don't do this, spaces will get treated as newlines when trying to work
+# with the files in a for loop.
+IFS='
+'
+
+name=$(basename $0)
+
+help() {
+    echo "usage: ${name} <subcommand> <LabID>"
+    echo "subcommands:"
+    echo "    canvass <LabID>"
+    echo "    collect <LabID>"
+    echo ""
+    echo "For help with a a subcommand, run:"
+    echo "${name} <subcommand> -h|--help"
+}
+
+collect() {
+    if [ -z $1 ] || [ $1 = "-h" ] || [ $1 = "--help" ]
+    then
+        echo "usgae: ${name} collect <LabID>"
+        echo "extracts submitted archives to a new directory for grading"
+        exit 0
+    fi
+
+    pushd ${HOME} > /dev/null 2>&1
+
+    lab_id=$1
+    sections=$(ls -1 "./Google/Assignments/")
+    for section in ${sections}
+    do
+        if [ $(basename "${section}") = "Sandbox" -o $(basename "${section}") = "Archive" ]
+        then
+            # we don't want to look for labs in these directories
+            # - Sandbox is a testing area
+            # - Archive is for old classes
+            continue
+        fi
+
+        bxcp "./Google/Assignments/${section}/${lab_id}" "./Google/Submissions/${lab_id}"
+    done
+    popd > /dev/null 2>&1
+
+}
+
+canvass() {
+    if [ -z $1 ] || [ $1 = "-h" ] || [ $1 = "--help" ]
+    then
+        echo "usgae: ${name} canvass <LabID>"
+        echo "prints a list and count of submitted zipfiles for the lab with LabID"
+        exit 0
+    fi
+
+    pushd ${HOME} > /dev/null 2>&1
+
+    lab_id=$1
+    sections=$(ls -1 "./Google/Assignments/")
+    for section in ${sections}
+    do
+        if [ $(basename "${section}") = "Sandbox" -o $(basename "${section}") = "Archive" ]
+        then
+            # we don't want to look for labs in these directories
+            # - Sandbox is a testing area
+            # - Archive is for old classes
+            continue
+        fi
+
+        lsz "./Google/Assignments/${section}/${lab_id}"
+    done
+    popd > /dev/null 2>&1
+
+}
+
+subcommand=$1
+case ${subcommand} in
+    "" | "-h" | "--help")
+        help
+        ;;
+    *)
+        shift
+        ${subcommand} "$@"
+        if [ $? = 127 ]
+        then
+            echo "error: "${subcommand}" is not a valid subcommand" >&2
+            echo "       run \`zippy --help\` for a list of subcommands"
+            exit 1
+        fi
+        ;;
+esac
