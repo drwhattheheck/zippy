@@ -51,6 +51,10 @@ IFS='
 
 name=$(basename $0)
 
+# we want the absolute path to the project directory to properly
+# invoke the scripts in the submodule
+script_dir=$(dirname $(realpath $0))
+
 help() {
     echo "usage: ${name} <subcommand> <LabID>"
     echo "subcommands:"
@@ -83,7 +87,7 @@ collect() {
             continue
         fi
 
-        ziptools/bxcp "./Google/Assignments/${section}/${lab_id}" "./Google/Submissions/${lab_id}"
+        "${script_dir}"/ziptools/bxcp "./Google/Assignments/${section}/${lab_id}" "./Google/Submissions/${lab_id}"
     done
     popd > /dev/null 2>&1
 
@@ -111,7 +115,7 @@ canvass() {
             continue
         fi
 
-        ziptools/lsz "./Google/Assignments/${section}/${lab_id}"
+        "${script_dir}"/ziptools/lsz "./Google/Assignments/${section}/${lab_id}"
     done
     popd > /dev/null 2>&1
 
