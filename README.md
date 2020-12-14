@@ -15,6 +15,15 @@ you'll have to use something like
 [google-drive-ocamlfuse](https://github.com/astrada/google-drive-ocamlfuse)
 for that.
 
+Installation
+------------
+
+This project uses a submodule, so if you want to clone it, you'll have to add
+the `--recursive` option to your command.  Otherwise, the scripts in the
+submodule will not be cloned and you won't be able to invoke `zippy`.
+
+    git clone --recursive git://github.com/drwhattheheck/zippy.git
+
 Usage
 -----
 
